@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organ Transplant Database & Hospital Locator</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            height: calc(100vh - 200px);
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+        }
+
+        .map-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            border-radius: 15px;
+        }
+
+        .search-section {
+            margin-bottom: 25px;
+        }
+
+        .search-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .results-section {
+            margin-top: 25px;
+        }
+
+        .results-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+
+        .result-item:hover {
+            transform: translateX(5px);
+            background: #e9ecef;
+        }
+
+        .result-item h4 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .result-item p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .distance-info {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .patient-request-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .patient-request-form h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .location-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .map-container {
+                height: 400px;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .location-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-heartbeat"></i> Organ Database</h1>
+            <p>Find the nearest hospitals with organ transplant services</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="search-section">
+                    <h3>Search for Organs</h3>
+                    <form id="searchForm">
+                        <div class="form-group">
+                            <label for="organName">Organ Type</label>
+                            <select id="organName">
+                                <option value="">All Organs</option>
+                                <option value="Heart">Heart</option>
+                                <option value="Liver">Liver</option>
+                                <option value="Kidney">Kidney</option>
+                                <option value="Lung">Lung</option>
+                                <option value="Pancreas">Pancreas</option>
+                                <option value="Cornea">Cornea</option>
+                                <option value="Bone Marrow">Bone Marrow</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="bloodType">Blood Type</label>
+                            <select id="bloodType">
+                                <option value="">Any Blood Type</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="urgencyLevel">Urgency Level</label>
+                            <select id="urgencyLevel">
+                                <option value="">Any Level</option>
+                                <option value="1">Low (1)</option>
+                                <option value="2">Medium (2)</option>
+                                <option value="3">High (3)</option>
+                                <option value="4">Critical (4)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxDistance">Max Distance (km)</label>
+                            <input type="number" id="maxDistance" value="500" min="10" max="1000">
+                        </div>
+
+                        <button type="submit" class="btn">
+                            <i class="fas fa-search"></i> Search Organs
+                        </button>
+                    </form>
+                </div>
+
+                <div class="search-section">
+                    <h3><i class="fas fa-map-marker-alt"></i> Find Nearest Hospitals</h3>
+                    <form id="hospitalForm">
+                        <div class="form-group">
+                            <label for="maxDistanceHospitals">Max Distance (km)</label>
+                            <input type="number" id="maxDistanceHospitals" value="100" min="10" max="500">
+                        </div>
+
+                        <button type="submit" class="btn">
+                            <i class="fas fa-hospital"></i> Find Hospitals
+                        </button>
+                    </form>
+                </div>
+
+                <div class="patient-request-form">
+                    <h4><i class="fas fa-user-plus"></i> Patient Request</h4>
+                    <form id="patientRequestForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="patientName">Patient Name</label>
+                                <input type="text" id="patientName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="patientAge">Age</label>
+                                <input type="number" id="patientAge" min="1" max="120" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="patientBloodType">Blood Type</label>
+                                <select id="patientBloodType" required>
+                                    <option value="">Select Blood Type</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="patientOrgan">Required Organ</label>
+                                <select id="patientOrgan" required>
+                                    <option value="">Select Organ</option>
+                                    <option value="Heart">Heart</option>
+                                    <option value="Liver">Liver</option>
+                                    <option value="Kidney">Kidney</option>
+                                    <option value="Lung">Lung</option>
+                                    <option value="Pancreas">Pancreas</option>
+                                    <option value="Cornea">Cornea</option>
+                                    <option value="Bone Marrow">Bone Marrow</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactPhone">Contact Phone</label>
+                            <input type="tel" id="contactPhone">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="contactEmail">Contact Email</label>
+                            <input type="email" id="contactEmail">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="medicalNotes">Medical Notes</label>
+                            <textarea id="medicalNotes" rows="3" style="width: 100%; padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px;"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn">
+                            <i class="fas fa-paper-plane"></i> Submit Request
+                        </button>
+                    </form>
+                </div>
+
+                <div class="results-section">
+                    <h3><i class="fas fa-list"></i> Search Results</h3>
+                    <div id="results"></div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
